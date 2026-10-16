@@ -1,3 +1,4 @@
+import {CLIENT_SYSTEM_INSTRUCTIONS, supportsClientSystemInstructions} from "./ClientSystemInstructions";
 import {createAsyncUserInputUpdate} from "./AsyncUserInput";
 import * as acp from "@agentclientprotocol/sdk";
 import {RequestError, type SessionId, type SessionModeState} from "@agentclientprotocol/sdk";
@@ -513,6 +514,7 @@ export class CodexAcpServer {
             },
             authMethods: getCodexAuthMethods(_params.clientCapabilities),
             _meta: {
+                ...(supportsClientSystemInstructions(_params.clientCapabilities) ? {[CLIENT_SYSTEM_INSTRUCTIONS]: {version: 1}} : {}),
                 steering: {
                     supported: true,
                 },

@@ -537,6 +537,43 @@ describe('ACP server test', { timeout: 40_000 }, () => {
         }));
     });
 
+    it('passes client instructions to thread start without AIR metadata', async () => {
+        const mockFixture = createCodexMockTestFixture();
+        const codexAcpClient = mockFixture.getCodexAcpClient();
+        const codexAppServerClient = mockFixture.getCodexAppServerClient();
+        vi.spyOn(codexAppServerClient, "listSkills").mockResolvedValue({data: []});
+        const threadStartSpy = vi.spyOn(codexAppServerClient, "threadStart").mockResolvedValue({
+            thread: {id: "thread-id"} as any,
+            model: "gpt-5",
+            reasoningEffort: "medium",
+            serviceTier: null,
+        } as any);
+        vi.spyOn(codexAppServerClient, "listModels").mockResolvedValue({
+            data: [createTestModel({id: "gpt-5"})],
+            nextCursor: null,
+        });
+
+        await codexAcpClient.newSession({
+            cwd: "/workspace",
+            mcpServers: [],
+            _meta: {"ahpd.clientSystemInstructions": "Follow the project rules."},
+        });
+
+        expect(threadStartSpy).toHaveBeenCalledWith(expect.objectContaining({
+            developerInstructions: "Follow the project rules.",
+        }));
+    });
+
+    it.each([null, "", "é".repeat(65537)])('rejects invalid client instructions before starting a thread', async (instructions) => {
+        const mockFixture = createCodexMockTestFixture();
+        const threadStart = vi.spyOn(mockFixture.getCodexAppServerClient(), "threadStart");
+        await expect(mockFixture.getCodexAcpClient().newSession({
+            cwd: "/workspace", mcpServers: [],
+            _meta: {"ahpd.clientSystemInstructions": instructions},
+        })).rejects.toThrow("Client system instructions must be");
+        expect(threadStart).not.toHaveBeenCalled();
+    });
+
     it('ignores malformed AIR custom instructions', async () => {
         const mockFixture = createCodexMockTestFixture();
         const codexAcpClient = mockFixture.getCodexAcpClient();

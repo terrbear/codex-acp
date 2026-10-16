@@ -71,6 +71,7 @@ import {
     threadActiveWriterRequestError,
 } from "./CodexThreadErrors";
 import {airCustomInstructions} from "./AirExtension";
+import {clientSystemInstructions} from "./ClientSystemInstructions";
 export type {SessionMetadata, SessionMetadataWithThread} from "./SessionMetadata";
 
 /**
@@ -790,7 +791,7 @@ export class CodexAcpClient {
 
     async newSession(request: acp.NewSessionRequest): Promise<SessionMetadata> {
         const additionalDirectories = readAdditionalDirectories(request.cwd, request.additionalDirectories, request._meta);
-        const developerInstructions = airCustomInstructions(request._meta);
+        const developerInstructions = clientSystemInstructions(request._meta) ?? airCustomInstructions(request._meta);
         await this.refreshSkills(request.cwd, additionalDirectories);
 
         const sessionConfig = await this.createSessionConfig(request.cwd, additionalDirectories, request.mcpServers);

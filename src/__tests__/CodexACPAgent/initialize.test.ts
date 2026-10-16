@@ -74,6 +74,17 @@ describe('CodexACPAgent - initialize', () => {
         });
     });
 
+    it('negotiates client instructions without enabling AIR reports', async () => {
+        const result = await agent.initialize({
+            protocolVersion: acp.PROTOCOL_VERSION,
+            clientCapabilities: {_meta: {"ahpd.clientSystemInstructions": {version: 1}}},
+        });
+        expect(result._meta).toEqual({
+            steering: {supported: true},
+            "ahpd.clientSystemInstructions": {version: 1},
+        });
+    });
+
     it('should advertise the AIR extension only to AIR', async () => {
         const result = await agent.initialize({
             protocolVersion: acp.PROTOCOL_VERSION,

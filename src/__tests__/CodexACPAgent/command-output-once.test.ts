@@ -43,6 +43,25 @@ function completion(item: CommandItem, capabilities: ClientCapabilities) {
 }
 
 describe("command output is sent once", () => {
+    it.each<CommandItem["commandActions"]>([
+        [],
+        [{type: "read", command: "cat a.txt", name: "a.txt", path: "/workspace/a.txt"}],
+        [{type: "search", command: "rg a", query: "a", path: "/workspace"}],
+        [{type: "listFiles", command: "ls", path: "/workspace"}],
+    ])("preserves standard live output for an instruction-only client: %j", async (...commandActions) => {
+        const capabilities = ClientCapabilities.from({_meta: {"ahpd.clientSystemInstructions": {version: 1}}});
+        expect(capabilities.airClient).toBe(false);
+        const fixture = createCodexMockTestFixture();
+        const sessionId = "instruction-output";
+        await setupPromptAndSendNotifications(
+            fixture, sessionId, createTestSessionState({sessionId, clientCapabilities: capabilities}),
+            liveCommand(sessionId, {commandActions}),
+        );
+        const dump = fixture.getAcpConnectionDump([]);
+        expect(dump).toContain("terminal_output_delta");
+        expect(occurrences(dump, "a.txt\nb.txt\n")).toBeGreaterThan(0);
+    });
+
     it("sends the output as terminal_output_delta to AIR", () => {
         expect(completion(command(), DELTA_CLIENT)).toEqual({
             sessionUpdate: "tool_call_update",

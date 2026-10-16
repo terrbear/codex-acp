@@ -1,3 +1,4 @@
+import {CLIENT_SYSTEM_INSTRUCTIONS, supportsClientSystemInstructions} from "./ClientSystemInstructions";
 import {createAsyncUserInputUpdate} from "./AsyncUserInput";
 import * as acp from "@agentclientprotocol/sdk";
 import {RequestError, type SessionId, type SessionModeState} from "@agentclientprotocol/sdk";
@@ -508,10 +509,12 @@ export class CodexAcpServer {
                     // Presence means "this agent pushes `_auth/status_update`". It
                     // never carries a payload, and the client never asks for one.
                     [AUTH_STATUS_META_KEY]: authStatusCapability(),
+                    readOnlyHistory: {version: 1},
                 },
             },
             authMethods: getCodexAuthMethods(_params.clientCapabilities),
             _meta: {
+                ...(supportsClientSystemInstructions(_params.clientCapabilities) ? {[CLIENT_SYSTEM_INSTRUCTIONS]: {version: 1}} : {}),
                 steering: {
                     supported: true,
                 },
@@ -556,6 +559,21 @@ export class CodexAcpServer {
     }
 
     async extMethod(method: string, params: Record<string, unknown>): Promise<Record<string, unknown>> {
+        if (method === "_session/read_history") {
+            const id = params["sessionId"];
+            if (typeof id !== "string" || !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(id) || Object.keys(params).some(key => key !== "sessionId")) {
+                throw RequestError.invalidParams(undefined, "Invalid history identity");
+            }
+            try {
+                const {thread} = await this.runWithProcessCheck(() => this.codexAcpClient.appServerClient.threadReadWithHistory(id));
+                if (thread.id !== id || !Array.isArray(thread.turns) || thread.turns.length === 0 || Buffer.byteLength(JSON.stringify(thread)) > 8 * 1024 * 1024) {
+                    throw new Error("History unavailable");
+                }
+                return {version: 1, format: "codex-thread", thread, writable: false};
+            } catch {
+                throw RequestError.invalidParams(undefined, "History unavailable");
+            }
+        }
         const methodRequest = { method: method, params: params };
         if (!isExtMethodRequest(methodRequest)) {
             return {};

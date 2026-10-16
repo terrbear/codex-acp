@@ -64,6 +64,7 @@ const asyncTaskStopParamsParser = z.object({
 }).passthrough();
 
 const hooksListParamsParser = z.object({cwd: z.string().trim().min(1)});
+const readHistoryParamsParser = z.object({sessionId: z.string()}).strict();
 const hooksTrustParamsParser = z.object({
     cwd: z.string().trim().min(1),
     hooks: z.array(z.object({key: z.string().min(1), currentHash: z.string().min(1)})).min(1),
@@ -184,6 +185,7 @@ function startAcpServer() {
         .onNotification(acp.methods.agent.session.cancel, (ctx) => getAgent().cancel(ctx.params))
         .onRequest("authentication/status", emptyExtensionParamsParser, (ctx) => getAgent().extMethod("authentication/status", ctx.params))
         .onRequest("authentication/logout", emptyExtensionParamsParser, (ctx) => getAgent().extMethod("authentication/logout", ctx.params))
+        .onRequest("_session/read_history", readHistoryParamsParser, (ctx) => getAgent().extMethod("_session/read_history", ctx.params))
         .onRequest(LEGACY_SET_SESSION_MODEL_METHOD, legacySetSessionModelParamsParser, (ctx) => getAgent().extMethod(LEGACY_SET_SESSION_MODEL_METHOD, ctx.params))
         .onRequest(SESSION_STEERING_METHOD, sessionSteerParamsParser, (ctx) => getAgent().extMethod(SESSION_STEERING_METHOD, ctx.params))
         .onRequest(ASYNC_TASK_STOP_METHOD, asyncTaskStopParamsParser, (ctx) => getAgent().extMethod(ASYNC_TASK_STOP_METHOD, ctx.params))

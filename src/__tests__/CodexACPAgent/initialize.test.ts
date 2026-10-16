@@ -63,6 +63,7 @@ describe('CodexACPAgent - initialize', () => {
                 },
                 _meta: {
                     authStatus: {},
+                    readOnlyHistory: {version: 1},
                 },
             },
             authMethods: getCodexAuthMethods(),
@@ -71,6 +72,17 @@ describe('CodexACPAgent - initialize', () => {
                     supported: true,
                 },
             },
+        });
+    });
+
+    it('negotiates client instructions without enabling AIR reports', async () => {
+        const result = await agent.initialize({
+            protocolVersion: acp.PROTOCOL_VERSION,
+            clientCapabilities: {_meta: {"ahpd.clientSystemInstructions": {version: 1}}},
+        });
+        expect(result._meta).toEqual({
+            steering: {supported: true},
+            "ahpd.clientSystemInstructions": {version: 1},
         });
     });
 

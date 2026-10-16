@@ -1,3 +1,4 @@
+import {ClientCapabilities} from "../../tool-calls/ClientCapabilities";
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { SessionState } from '../../CodexAcpServer';
 import type { ServerNotification } from '../../app-server';
@@ -322,7 +323,7 @@ describe('CodexEventHandler - command action events', () => {
         );
     });
 
-    it('should include mcp progress and final logs', async () => {
+    it.each([undefined, {_meta: {"ahpd.clientSystemInstructions": {version: 1}}}])('should include mcp progress and final logs for %j', async (clientCapabilities) => {
         const notifications: ServerNotification[] = [
             {
                 method: 'item/started',
@@ -383,10 +384,11 @@ describe('CodexEventHandler - command action events', () => {
             },
         ];
 
-        await setupPromptAndSendNotifications(mockFixture, sessionId, sessionState, notifications);
+        const state = clientCapabilities === undefined ? sessionState : {...sessionState, clientCapabilities: ClientCapabilities.from(clientCapabilities)};
+        await setupPromptAndSendNotifications(mockFixture, sessionId, state, notifications);
 
         await expect(mockFixture.getAcpConnectionDump([])).toMatchFileSnapshot(
-            'data/mcp-tool-completed-with-logs.json'
+            clientCapabilities === undefined ? 'data/mcp-tool-completed-with-logs.json' : 'data/mcp-instruction-client-logs.json'
         );
     });
 

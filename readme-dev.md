@@ -136,3 +136,7 @@ item ID and each question has a `title` and nullable `options` array of strings.
 Clients can render a persistent form and send the user's answers as a subsequent
 user prompt. These questions do not hold an ACP request open and must not be
 withdrawn merely because the current prompt completes.
+
+## Steering a running turn
+
+The `_session/steering` extension accepts `activeOnly: true` when initialization advertises `_meta.steering.activeOnly`. It returns `injected` when Codex accepts the correction into its current turn, or `inactive` if that turn already ended. Active-only requests never start a replacement turn. Omitting the option preserves the existing fallback that can return `startedNewTurn`. Invalid option types are rejected.

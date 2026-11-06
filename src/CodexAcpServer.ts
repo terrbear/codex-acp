@@ -517,6 +517,7 @@ export class CodexAcpServer {
                 ...(supportsClientSystemInstructions(_params.clientCapabilities) ? {[CLIENT_SYSTEM_INSTRUCTIONS]: {version: 1}} : {}),
                 steering: {
                     supported: true,
+                    activeOnly: true,
                 },
                 // Only AIR gets the AIR extension, see `docs/air-extensions.md`.
                 ...(this.capabilities.airClient ? {
@@ -2102,6 +2103,9 @@ export class CodexAcpServer {
                 return {outcome: "injected"};
             }
         }
+        if (params["activeOnly"] === true) {
+            return {outcome: "inactive"};
+        }
         return await this.startNewTurnFromSteering(params);
     }
 
@@ -2282,9 +2286,13 @@ export class CodexAcpServer {
         if (typeof sessionId !== "string" || !Array.isArray(prompt)) {
             throw RequestError.invalidParams();
         }
+        if (params["activeOnly"] !== undefined && typeof params["activeOnly"] !== "boolean") {
+            throw RequestError.invalidParams();
+        }
         return {
             sessionId: sessionId,
             prompt: prompt as acp.ContentBlock[],
+            ...(params["activeOnly"] === undefined ? {} : {activeOnly: params["activeOnly"]}),
         };
     }
 

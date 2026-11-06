@@ -122,10 +122,11 @@ export async function legacySetSessionModel(
 export type SessionSteerRequest = {
     sessionId: SessionId;
     prompt: ContentBlock[];
+    activeOnly?: boolean;
 }
 
 export type SessionSteeringResponse = {
-    outcome: "injected" | "startedNewTurn" | "failed";
+    outcome: "injected" | "startedNewTurn" | "failed" | "inactive";
 }
 
 export type SessionSteeringExtRequest = {

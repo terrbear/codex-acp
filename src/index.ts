@@ -44,6 +44,7 @@ const legacySetSessionModelParamsParser = z.object({
 const sessionSteerParamsParser = z.object({
     sessionId: z.string(),
     prompt: z.array(z.any()),
+    activeOnly: z.boolean().optional(),
 }).passthrough();
 
 const goalControlParamsParser = z.discriminatedUnion("action", [

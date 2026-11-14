@@ -76,6 +76,10 @@ if (process.argv.includes("--version")) {
     process.exit(0);
 }
 
+if (process.env["CODEX_AUTH_TOKEN_HELPER"] && ["login", "cli"].includes(process.argv[2] ?? "")) {
+    throw new Error("Direct CLI authentication is unavailable with an external credential authority");
+}
+
 if (process.argv[2] === "login") {
     const args = process.argv.slice(3);
     runLoginCommand(args)

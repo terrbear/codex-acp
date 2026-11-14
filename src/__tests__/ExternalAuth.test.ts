@@ -1,4 +1,5 @@
 import {mkdtemp, writeFile, rm} from "node:fs/promises";
+import {spawnSync} from "node:child_process";
 import {tmpdir} from "node:os";
 import {join} from "node:path";
 import {afterEach, expect, it, vi} from "vitest";
@@ -73,4 +74,14 @@ it("fails initialization when the authority fails, without starting an alternati
     app.useExternalAuth(async () => { throw new Error("authority unavailable"); });
     await expect(app.initialize({capabilities: null, clientInfo: {name: "test", version: "1", title: null}})).rejects.toThrow("authority unavailable");
     expect(server.sendRequest.mock.calls.map(call => call[0])).toEqual(["initialize"]);
+});
+
+it("refuses direct login and CLI passthrough under an external authority", () => {
+    for (const command of ["login", "cli"]) {
+        const result = spawnSync(process.execPath, ["--import", "tsx", "src/index.ts", command], {
+            env: {...process.env, CODEX_AUTH_TOKEN_HELPER: "/unused/helper", APP_SERVER_LOGS: ""}, encoding: "utf8", timeout: 5000,
+        });
+        expect(result.status).not.toBe(0);
+        expect(result.stderr).toContain("Direct CLI authentication is unavailable with an external credential authority");
+    }
 });

@@ -724,8 +724,10 @@ export class CodexAcpClient {
         await this.refreshSkills(request.cwd, additionalDirectories);
 
         const sessionConfig = await this.createSessionConfig(request.cwd, additionalDirectories, request.mcpServers ?? []);
+        const developerInstructions = clientSystemInstructions(request._meta);
         const response = await this.resumeThread({
             excludeTurns: true,
+            ...(developerInstructions !== undefined && {developerInstructions}),
             config: sessionConfig.config,
             cwd: request.cwd,
             modelProvider: await this.getResumeModelProvider(),

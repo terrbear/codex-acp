@@ -83,7 +83,7 @@ describe('CodexACPAgent - initialize', () => {
         });
         expect(result._meta).toEqual({
             steering: {supported: true, activeOnly: true},
-            "ahpd.clientSystemInstructions": {version: 1},
+            "ahpd.clientSystemInstructions": {version: 1, resume: true},
         });
     });
 

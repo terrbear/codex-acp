@@ -514,7 +514,7 @@ export class CodexAcpServer {
             },
             authMethods: getCodexAuthMethods(_params.clientCapabilities),
             _meta: {
-                ...(supportsClientSystemInstructions(_params.clientCapabilities) ? {[CLIENT_SYSTEM_INSTRUCTIONS]: {version: 1}} : {}),
+                ...(supportsClientSystemInstructions(_params.clientCapabilities) ? {[CLIENT_SYSTEM_INSTRUCTIONS]: {version: 1, resume: true}} : {}),
                 steering: {
                     supported: true,
                     activeOnly: true,

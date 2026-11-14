@@ -693,6 +693,56 @@ describe('ACP server test', { timeout: 40_000 }, () => {
         expect(threadReadSpy).toHaveBeenCalledWith("thread-id");
     });
 
+    it('applies host developer instructions when loading the existing thread', async () => {
+        const mockFixture = createCodexMockTestFixture();
+        const codexAcpClient = mockFixture.getCodexAcpClient();
+        const codexAppServerClient = mockFixture.getCodexAppServerClient();
+
+        vi.spyOn(codexAppServerClient, "skillsExtraRootsSet").mockResolvedValue(undefined);
+        vi.spyOn(codexAppServerClient, "listSkills").mockResolvedValue({data: []});
+        const threadResumeSpy = vi.spyOn(codexAppServerClient, "threadResume").mockResolvedValue({
+            thread: {id: "thread-id"} as any,
+            model: "gpt-5",
+            reasoningEffort: "medium",
+            serviceTier: null,
+        } as any);
+        const threadReadSpy = vi.spyOn(codexAppServerClient, "threadReadWithHistory").mockResolvedValue({
+            thread: {id: "thread-id", turns: []} as any,
+        });
+        vi.spyOn(codexAppServerClient, "listModels").mockResolvedValue({
+            data: [createTestModel({id: "gpt-5"})],
+            nextCursor: null,
+        });
+
+        const resumed = await codexAcpClient.resumeSession({
+            sessionId: "resume-id",
+            cwd: "/workspace",
+            additionalDirectories: ["/workspace/resume-extra"],
+        });
+        const loaded = await codexAcpClient.loadSession({
+            sessionId: "load-id",
+            cwd: "/workspace",
+            additionalDirectories: ["/workspace/load-extra"],
+            mcpServers: [],
+            _meta: {"ahpd.clientSystemInstructions": "Use the starting repository by default; follow user requests to switch."},
+        });
+
+        expect(threadResumeSpy.mock.calls.every(([params]) => params.excludeTurns === true)).toBe(true);
+        expect(resumed.additionalDirectories).toEqual(["/workspace/resume-extra"]);
+        expect(loaded.additionalDirectories).toEqual(["/workspace/load-extra"]);
+        expect(threadResumeSpy.mock.calls[0]![0].config?.["projects"]).toEqual({
+            "/workspace": {trust_level: "trusted"},
+            "/workspace/resume-extra": {trust_level: "trusted"},
+        });
+        expect(threadResumeSpy.mock.calls[1]![0].config?.["projects"]).toEqual({
+            "/workspace": {trust_level: "trusted"},
+            "/workspace/load-extra": {trust_level: "trusted"},
+        });
+        expect(threadReadSpy).toHaveBeenCalledWith("thread-id");
+        expect(threadResumeSpy.mock.calls[0]![0].developerInstructions).toBeUndefined();
+        expect(threadResumeSpy.mock.calls[1]![0]).toMatchObject({threadId: "load-id", developerInstructions: "Use the starting repository by default; follow user requests to switch."});
+    });
+
     it('forks an ACP session through thread/fork with the requested workspace', async () => {
         const mockFixture = createCodexMockTestFixture();
         const codexAcpClient = mockFixture.getCodexAcpClient();

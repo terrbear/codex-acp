@@ -612,6 +612,13 @@ export class CodexAppServerClient {
         return await this.sendRequest({ method: "thread/resume", params: params });
     }
 
+    async injectDeveloperInstructions(threadId: string, text: string): Promise<void> {
+        await this.sendRequest({method: "thread/inject_items", params: {
+            threadId,
+            items: [{type: "message", role: "developer", content: [{type: "input_text", text}]}],
+        }});
+    }
+
     async threadFork(params: ThreadForkParams): Promise<ThreadForkResponse> {
         return await this.sendRequest({ method: "thread/fork", params: params });
     }

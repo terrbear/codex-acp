@@ -733,6 +733,10 @@ export class CodexAcpClient {
             modelProvider: await this.getResumeModelProvider(),
             threadId: request.sessionId,
         });
+        if (request._meta?.["ahpd.refreshClientSystemInstructions"] === true) {
+            if (developerInstructions === undefined) throw new Error("A developer-instruction refresh requires host instructions");
+            await this.codexClient.injectDeveloperInstructions(request.sessionId, developerInstructions);
+        }
         onSubscribed?.();
         // Resume cursors bound durable history; later turns arrive through live events.
         // A null paginated cursor means there was no durable history at resume time.

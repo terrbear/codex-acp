@@ -706,6 +706,7 @@ describe('ACP server test', { timeout: 40_000 }, () => {
             reasoningEffort: "medium",
             serviceTier: null,
         } as any);
+        const injectSpy = vi.spyOn(codexAppServerClient, "injectDeveloperInstructions").mockResolvedValue(undefined);
         const threadReadSpy = vi.spyOn(codexAppServerClient, "threadReadWithHistory").mockResolvedValue({
             thread: {id: "thread-id", turns: []} as any,
         });
@@ -724,7 +725,7 @@ describe('ACP server test', { timeout: 40_000 }, () => {
             cwd: "/workspace",
             additionalDirectories: ["/workspace/load-extra"],
             mcpServers: [],
-            _meta: {"ahpd.clientSystemInstructions": "Use the starting repository by default; follow user requests to switch."},
+            _meta: {"ahpd.clientSystemInstructions": "Use the starting repository by default; follow user requests to switch.", "ahpd.refreshClientSystemInstructions": true},
         });
 
         expect(threadResumeSpy.mock.calls.every(([params]) => params.excludeTurns === true)).toBe(true);
@@ -739,6 +740,7 @@ describe('ACP server test', { timeout: 40_000 }, () => {
             "/workspace/load-extra": {trust_level: "trusted"},
         });
         expect(threadReadSpy).toHaveBeenCalledWith("thread-id");
+        expect(injectSpy).toHaveBeenCalledExactlyOnceWith("load-id", "Use the starting repository by default; follow user requests to switch.");
         expect(threadResumeSpy.mock.calls[0]![0].developerInstructions).toBeUndefined();
         expect(threadResumeSpy.mock.calls[1]![0]).toMatchObject({threadId: "load-id", developerInstructions: "Use the starting repository by default; follow user requests to switch."});
     });

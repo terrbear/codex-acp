@@ -52,6 +52,17 @@ describe("attachLogs", () => {
         expect(written).toEqual(["{\"id\":1}\n"]);
     });
 
+    it("suppresses credential-bearing traffic in external authentication mode", () => {
+        vi.stubEnv("CODEX_AUTH_TOKEN_HELPER", "/trusted/helper");
+        vi.spyOn(logger, "enabled", "get").mockReturnValue(true);
+        const log = vi.spyOn(logger, "log").mockImplementation(() => {});
+        const proc = fakeProcess();
+        proc.stdin.write("synthetic-access-token");
+        proc.stdout.emit("data", Buffer.from("synthetic-access-token"));
+        proc.stderr.emit("data", Buffer.from("synthetic-access-token"));
+        expect(log).not.toHaveBeenCalled();
+    });
+
     it("logs the same lines as before when logging is on", () => {
         vi.spyOn(logger, "enabled", "get").mockReturnValue(true);
         const log = vi.spyOn(logger, "log").mockImplementation(() => {});

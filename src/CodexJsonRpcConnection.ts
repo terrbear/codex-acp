@@ -87,15 +87,15 @@ export function startCodexConnection(
 export function attachLogs(proc: ChildProcessWithoutNullStreams) {
     const originalWrite = proc.stdin.write.bind(proc.stdin);
     proc.stdin.write = (chunk: any, encoding?: any, callback?: any): boolean => {
-        if (logger.enabled) logger.log(`[IN] ${chunk.toString()}`);
+        if (logger.enabled && !process.env["CODEX_AUTH_TOKEN_HELPER"]) logger.log(`[IN] ${chunk.toString()}`);
         return originalWrite(chunk, encoding, callback);
     };
 
     proc.stderr.on("data", (data) => {
-        if (logger.enabled) logger.log(`[ERR] ${data.toString()}`);
+        if (logger.enabled && !process.env["CODEX_AUTH_TOKEN_HELPER"]) logger.log(`[ERR] ${data.toString()}`);
     });
     proc.stdout.on("data", (data: Buffer) => {
-        if (logger.enabled) logger.log(`[OUT] ${data.toString()}`);
+        if (logger.enabled && !process.env["CODEX_AUTH_TOKEN_HELPER"]) logger.log(`[OUT] ${data.toString()}`);
     });
     proc.on("exit", (code) => {
         logger.log(`[EXIT] code: ${code?.toString()}`);

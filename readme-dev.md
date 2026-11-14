@@ -136,3 +136,41 @@ item ID and each question has a `title` and nullable `options` array of strings.
 Clients can render a persistent form and send the user's answers as a subsequent
 user prompt. These questions do not hold an ACP request open and must not be
 withdrawn merely because the current prompt completes.
+
+### Externally managed ChatGPT access tokens
+
+Set `CODEX_AUTH_TOKEN_HELPER` to an absolute executable path to use an external
+credential authority. The helper runs without a shell or arguments. It receives
+one JSON object on stdin, terminated by EOF:
+
+```json
+{"reason":"initial","previousAccountId":null,"generation":null}
+```
+
+On app-server unauthorized-token recovery, `reason` is `unauthorized` and the
+previous account and opaque generation are included. Return exactly:
+
+```json
+{"accessToken":"access-token","chatgptAccountId":"account-id","chatgptPlanType":null,"generation":"opaque-generation"}
+```
+
+The adapter keeps the generation privately and returns only the access-token
+fields to app-server. The authority must coalesce refreshes for stale generations
+and bind owner/provider/account server-side; the account hint does not authorize
+an account switch. A changed account requires a fresh adapter session. The helper
+has an eight-second deadline and a 64 KiB output limit. Errors are generic and
+helper output is never logged. App-server raw traffic logging is disabled in this
+mode, including when `APP_SERVER_LOGS` is set.
+
+The adapter bootstraps external auth before reporting initialization complete and
+retains the authority across app-server recovery. Local login/logout is refused;
+perform those operations through the authority. `DEFAULT_AUTH_REQUEST` and
+`MODEL_PROVIDER` cannot be combined with this mode. Broker unavailability fails
+initialization/refresh rather than reverting to local credentials.
+
+Workers must use credential-free provider homes. This helper does not isolate a
+shared `CODEX_HOME` automatically: a preexisting refresh-token file can be read by
+app-server before the initialize handshake. Do not mount the authority's
+credential files into workers. The authority is responsible for serialized,
+durable credential writes and fenced ownership; this adapter never receives a
+refresh token.

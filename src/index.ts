@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import {externalAuthHelper} from "./ExternalAuth";
 import * as acp from "@agentclientprotocol/sdk";
 import {z} from "zod";
 import {startCodexConnection} from "./CodexJsonRpcConnection";
@@ -96,10 +97,13 @@ if (process.argv[2] === "login") {
 }
 
 function startAcpServer() {
+    const helper = process.env["CODEX_AUTH_TOKEN_HELPER"];
+    const externalAuth = helper ? externalAuthHelper(helper) : undefined;
     const codexPath = process.env["CODEX_PATH"];
     const configString = process.env["CODEX_CONFIG"];
     const authRequestString = process.env["DEFAULT_AUTH_REQUEST"];
     const modelProvider = process.env["MODEL_PROVIDER"];
+    if (externalAuth && (authRequestString || modelProvider)) throw new Error("External authentication cannot be combined with another authentication provider");
     const config = configString ? JSON.parse(configString) : undefined;
     const hookConfig = prepareCodexHookConfig(config);
     const parsedAuthRequest = authRequestString ? JSON.parse(authRequestString) : undefined;
@@ -136,7 +140,7 @@ function startAcpServer() {
 
     function createAgent(connection: acp.AgentContext): CodexAcpServer {
         const appServerClient = new CodexAppServerClient(codexProcessState.connection.connection);
-        const codexClient = new CodexAcpClient(appServerClient, hookConfig.sessionConfig, modelProvider);
+        const codexClient = new CodexAcpClient(appServerClient, hookConfig.sessionConfig, modelProvider, externalAuth);
         return new CodexAcpServer(
             connection,
             codexClient,

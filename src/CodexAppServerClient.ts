@@ -1,3 +1,4 @@
+import type {ExternalAuth} from "./ExternalAuth";
 import {type MessageConnection, RequestType} from "vscode-jsonrpc/node";
 import {AppServerConnectionLostError, ConnectionLoss} from "./app-server-recovery/ConnectionLoss";
 import {McpOauthCompletions} from "./mcp/McpOauthCompletions";
@@ -9,6 +10,8 @@ import type {
     ServerNotification
 } from "./app-server";
 import type {
+    ChatgptAuthTokensRefreshParams,
+    ChatgptAuthTokensRefreshResponse,
     CancelLoginAccountParams,
     CancelLoginAccountResponse,
     ConfigReadParams,
@@ -166,6 +169,7 @@ const HISTORY_PAGE_TIMEOUT_MS = 60_000;
  */
 export class CodexAppServerClient {
     readonly connection: MessageConnection;
+    private externalAuth?: ExternalAuth;
     private approvalHandlers = new Map<string, ApprovalHandler>();
     private elicitationHandlers = new Map<string, ElicitationHandler>();
     readonly mcpStartup = new McpStartupTracker();
@@ -299,8 +303,21 @@ export class CodexAppServerClient {
         this.threadSettings.delete(threadId);
     }
 
+    useExternalAuth(provider: ExternalAuth): void {
+        this.externalAuth = provider;
+        this.connection.onRequest(new RequestType<ChatgptAuthTokensRefreshParams, ChatgptAuthTokensRefreshResponse, void>(
+            "account/chatgptAuthTokens/refresh"
+        ), params => provider(params));
+    }
+
     async initialize(params: InitializeParams): Promise<InitializeResponse> {
-        return await this.sendRequest({ method: "initialize", params: params });
+        const result = await this.sendRequest<InitializeResponse>({ method: "initialize", params: params });
+        if (this.externalAuth) {
+            const tokens = await this.externalAuth(null);
+            try { await this.accountLogin({type: "chatgptAuthTokens", ...tokens}); }
+            catch { throw new Error("External authentication bootstrap failed"); }
+        }
+        return result;
     }
 
     async turnStart(params: TurnStartParams): Promise<TurnStartResponse> {
@@ -783,6 +800,8 @@ export class CodexAppServerClient {
     }
 
     async accountLogin(params: LoginAccountParams): Promise<LoginAccountResponse> {
+        if (this.externalAuth && params.type !== "chatgptAuthTokens") throw new Error("Authentication is managed externally");
+        if (params.type === "chatgptAuthTokens") return this.connection.sendRequest("account/login/start", params);
         return await this.sendRequest({ method: "account/login/start", params: params });
     }
 
@@ -791,6 +810,7 @@ export class CodexAppServerClient {
     }
 
     async accountLogout(): Promise<LogoutAccountResponse> {
+        if (this.externalAuth) throw new Error("Authentication is managed externally");
         return await this.sendRequest({ method: "account/logout", params: undefined });
     }
 

@@ -1,3 +1,4 @@
+import type {ExternalAuth} from "./ExternalAuth";
 import {
     type ApiKeyAuthRequest,
     CODEX_API_KEY_ENV_VAR,
@@ -154,7 +155,8 @@ export class CodexAcpClient {
     private configPath: string | null = null;
 
 
-    constructor(codexClient: CodexAppServerClient, codexConfig?: JsonObject, modelProvider?: string) {
+    constructor(codexClient: CodexAppServerClient, codexConfig?: JsonObject, modelProvider?: string, private readonly externalAuth?: ExternalAuth) {
+        if (externalAuth) codexClient.useExternalAuth(externalAuth);
         this.codexClient = codexClient;
         this.config = codexConfig ?? {};
         this.modelProvider = modelProvider ?? null;
@@ -172,7 +174,7 @@ export class CodexAcpClient {
      * that the agent set at runtime (gateway auth, `providers/set`) is copied by {@link adoptRoutingFrom}.
      */
     withAppServer(codexClient: CodexAppServerClient): CodexAcpClient {
-        const client = new CodexAcpClient(codexClient, this.config, this.modelProvider ?? undefined);
+        const client = new CodexAcpClient(codexClient, this.config, this.modelProvider ?? undefined, this.externalAuth);
         client.adoptRoutingFrom(this);
         return client;
     }
@@ -218,6 +220,7 @@ export class CodexAcpClient {
         authRequest: acp.AuthenticateRequest,
         urlElicitationRequester?: UrlElicitationRequester,
     ): Promise<Boolean> {
+        if (this.externalAuth) throw new Error("Authentication is managed externally");
         if (!isCodexAuthRequest(authRequest)) {
             throw RequestError.invalidRequest();
         }

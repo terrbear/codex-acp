@@ -174,3 +174,6 @@ app-server before the initialize handshake. Do not mount the authority's
 credential files into workers. The authority is responsible for serialized,
 durable credential writes and fenced ownership; this adapter never receives a
 refresh token.
+## Steering a running turn
+
+The `_session/steering` extension accepts `activeOnly: true` when initialization advertises `_meta.steering.activeOnly`. It returns `injected` when Codex accepts the correction into its current turn, or `inactive` if that turn already ended. Active-only requests never start a replacement turn. Omitting the option preserves the existing fallback that can return `startedNewTurn`. Invalid option types are rejected.

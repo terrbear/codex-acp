@@ -70,6 +70,7 @@ describe('CodexACPAgent - initialize', () => {
             _meta: {
                 steering: {
                     supported: true,
+                    activeOnly: true,
                 },
             },
         });
@@ -81,7 +82,7 @@ describe('CodexACPAgent - initialize', () => {
             clientCapabilities: {_meta: {"ahpd.clientSystemInstructions": {version: 1}}},
         });
         expect(result._meta).toEqual({
-            steering: {supported: true},
+            steering: {supported: true, activeOnly: true},
             "ahpd.clientSystemInstructions": {version: 1},
         });
     });
@@ -94,6 +95,7 @@ describe('CodexACPAgent - initialize', () => {
         expect(result._meta).toEqual({
             steering: {
                 supported: true,
+                    activeOnly: true,
             },
             jetbrains: {
                 air: {

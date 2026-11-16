@@ -80,6 +80,37 @@ describe('_session/steering', () => {
         await expect(promptPromise).resolves.toMatchObject({stopReason: "end_turn"});
     });
 
+    it('does not start a new turn for an active-only request after the turn ends', async () => {
+        const mockFixture = createCodexMockTestFixture();
+        vi.spyOn(mockFixture.getCodexAcpAgent(), "getSessionState").mockReturnValue(createTestSessionState());
+        const turnStart = vi.spyOn(mockFixture.getCodexAppServerClient(), "turnStart");
+
+        await expect(mockFixture.getCodexAcpAgent().extMethod(SESSION_STEERING_METHOD, {
+            sessionId: "session-id",
+            prompt: [{type: "text", text: "only steer a running turn"}],
+            activeOnly: true,
+        })).resolves.toEqual({outcome: "inactive"});
+        expect(turnStart).not.toHaveBeenCalled();
+    });
+
+    it('does not fall back to a new turn when active-only injection races completion', async () => {
+        const {mockFixture, sessionState, turnCompleted} = startActiveTurn();
+        const turnStart = vi.spyOn(mockFixture.getCodexAppServerClient(), "turnStart");
+        vi.spyOn(mockFixture.getCodexAppServerClient(), "turnSteer").mockImplementation(async () => {
+            turnCompleted.resolve({threadId: "session-id", turn: createTurn("turn-id", "completed")});
+            throw Object.assign(new Error("Internal error"), {data: {details: "no active turn to steer"}});
+        });
+        const prompt = mockFixture.getCodexAcpAgent().prompt({
+            sessionId: "session-id", prompt: [{type: "text", text: "initial task"}],
+        });
+        await vi.waitFor(() => expect(sessionState.currentTurnId).toBe("turn-id"));
+        await expect(mockFixture.getCodexAcpAgent().extMethod(SESSION_STEERING_METHOD, {
+            sessionId: "session-id", prompt: [{type: "text", text: "correction"}], activeOnly: true,
+        })).resolves.toEqual({outcome: "inactive"});
+        await expect(prompt).resolves.toMatchObject({stopReason: "end_turn"});
+        expect(turnStart).toHaveBeenCalledTimes(1);
+    });
+
     it('starts a new turn when no turn is active', async () => {
         const mockFixture = createCodexMockTestFixture();
         const sessionState = createTestSessionState();

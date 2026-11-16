@@ -141,6 +141,15 @@ const MCP_COMMAND = {
 export function withFeatureChanges(messages: RecordedMessage[]): RecordedMessage[] {
     const baselineMcp = JSON.stringify(canonical(BASELINE_MCP_COMMAND));
     return messages.map(message => {
+        if (message.direction === "response" && message.method === "initialize") {
+            const params = message.params as Json;
+            const meta = params["_meta"] as Json;
+            const capabilities = params["agentCapabilities"] as Json;
+            return {...message, params: {...params,
+                _meta: {...meta, steering: {supported: true, activeOnly: true}},
+                agentCapabilities: {...capabilities, _meta: {...capabilities["_meta"] as Json, readOnlyHistory: {version: 1}}},
+            }};
+        }
         const update = sessionUpdate(message);
         if (update === undefined || update["sessionUpdate"] !== "available_commands_update") return message;
         const commands = (update["availableCommands"] as unknown[]).map(command =>

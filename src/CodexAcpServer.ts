@@ -3508,7 +3508,7 @@ export class CodexAcpServer {
                 return {
                     stopReason: "end_turn",
                     usage: this.buildPromptUsage(sessionState),
-                    _meta: this.buildQuotaMeta(sessionState),
+                    _meta: this.buildPromptMeta(sessionState),
                 };
             }
 
@@ -3753,7 +3753,7 @@ export class CodexAcpServer {
             return {
                 stopReason: "end_turn",
                 usage: this.buildPromptUsage(sessionState),
-                _meta: this.buildQuotaMeta(sessionState),
+                _meta: this.buildPromptMeta(sessionState),
             };
         } catch (caught) {
             const err = this.recovery?.mapError(caught, promptClient) ?? caught;
@@ -3927,7 +3927,7 @@ export class CodexAcpServer {
         return {
             stopReason: "cancelled",
             usage: this.buildPromptUsage(sessionState),
-            _meta: this.buildQuotaMeta(sessionState),
+            _meta: this.buildPromptMeta(sessionState),
         };
     }
 
@@ -3945,9 +3945,17 @@ export class CodexAcpServer {
             stopReason: "end_turn",
             usage: this.buildPromptUsage(sessionState),
             _meta: {
-                ...this.buildQuotaMeta(sessionState),
+                ...this.buildPromptMeta(sessionState),
                 ...failureMeta,
             },
+        };
+    }
+
+    private buildPromptMeta(sessionState: SessionState) {
+        const usage = sessionState.promptTokenUsage?.requestUsage();
+        return {
+            ...this.buildQuotaMeta(sessionState),
+            ...(usage && usage.count > 0 ? { codexModelRequests: usage } : {}),
         };
     }
 

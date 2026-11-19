@@ -104,7 +104,7 @@ describe('Token Usage Events', () => {
                 prompt: [{ type: 'text', text: 'test prompt' }],
             });
 
-            await expect(`${JSON.stringify(response, null, 2)}\n`).toMatchFileSnapshot(
+            await expect(`${JSON.stringify(response, (key, value) => key === 'recordedAt' ? '<timestamp>' : value, 2)}\n`).toMatchFileSnapshot(
                 'data/token-usage-end-turn.json'
             );
         });
@@ -137,7 +137,7 @@ describe('Token Usage Events', () => {
                 prompt: [{ type: 'text', text: 'test prompt' }],
             });
 
-            await expect(`${JSON.stringify(response, null, 2)}\n`).toMatchFileSnapshot(
+            await expect(`${JSON.stringify(response, (key, value) => key === 'recordedAt' ? '<timestamp>' : value, 2)}\n`).toMatchFileSnapshot(
                 'data/token-usage-cancelled.json'
             );
         });
@@ -150,7 +150,7 @@ describe('Token Usage Events', () => {
                 prompt: [{ type: 'text', text: 'test prompt' }],
             });
 
-            await expect(`${JSON.stringify(response, null, 2)}\n`).toMatchFileSnapshot(
+            await expect(`${JSON.stringify(response, (key, value) => key === 'recordedAt' ? '<timestamp>' : value, 2)}\n`).toMatchFileSnapshot(
                 'data/token-usage-null.json'
             );
         });
@@ -181,7 +181,7 @@ describe('Token Usage Events', () => {
                 prompt: [{ type: 'text', text: 'test prompt' }],
             });
 
-            await expect(`${JSON.stringify(response, null, 2)}\n`).toMatchFileSnapshot(
+            await expect(`${JSON.stringify(response, (key, value) => key === 'recordedAt' ? '<timestamp>' : value, 2)}\n`).toMatchFileSnapshot(
                 'data/token-usage-multiple-updates.json'
             );
         });

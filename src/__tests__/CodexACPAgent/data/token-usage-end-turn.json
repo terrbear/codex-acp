@@ -31,6 +31,20 @@
           }
         }
       ]
+    },
+    "codexModelRequests": {
+      "count": 1,
+      "requests": [
+        {
+          "totalTokens": 2500,
+          "inputTokens": 1500,
+          "cachedInputTokens": 500,
+          "cacheWriteInputTokens": 0,
+          "outputTokens": 450,
+          "reasoningOutputTokens": 50,
+          "recordedAt": "<timestamp>"
+        }
+      ]
     }
   }
 }

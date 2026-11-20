@@ -110,6 +110,8 @@ export class PromptTokenUsage {
     private summedLast: TokenCount | null = null;
     private totalWentBack = false;
     private modelOutputSeen = false;
+    private requestCount = 0;
+    private requests: (TokenCount & { recordedAt: string })[] = [];
 
     /** @param startTotal the thread total when the prompt started, or null when it is unknown. */
     constructor(startTotal: TokenCount | null) {
@@ -136,6 +138,14 @@ export class PromptTokenUsage {
         this.summedLast = this.summedLast === null ? {...last} : combine(this.summedLast, last, (x, y) => x + y);
         this.previousTotal = total;
         this.latestTotal = total;
+        this.requestCount++;
+        if (this.requests.length < 1024) {
+            this.requests.push({...last, recordedAt: new Date().toISOString()});
+        }
+    }
+
+    requestUsage() {
+        return { count: this.requestCount, requests: this.requests.slice() };
     }
 
     /** The usage of the prompt so far, or null when Codex reported none. */

@@ -31,6 +31,38 @@
           }
         }
       ]
+    },
+    "codexModelRequests": {
+      "count": 3,
+      "requests": [
+        {
+          "totalTokens": 1000,
+          "inputTokens": 800,
+          "cachedInputTokens": 0,
+          "cacheWriteInputTokens": 0,
+          "outputTokens": 200,
+          "reasoningOutputTokens": 0,
+          "recordedAt": "<timestamp>"
+        },
+        {
+          "totalTokens": 1000,
+          "inputTokens": 800,
+          "cachedInputTokens": 0,
+          "cacheWriteInputTokens": 0,
+          "outputTokens": 200,
+          "reasoningOutputTokens": 0,
+          "recordedAt": "<timestamp>"
+        },
+        {
+          "totalTokens": 1500,
+          "inputTokens": 700,
+          "cachedInputTokens": 500,
+          "cacheWriteInputTokens": 0,
+          "outputTokens": 200,
+          "reasoningOutputTokens": 100,
+          "recordedAt": "<timestamp>"
+        }
+      ]
     }
   }
 }

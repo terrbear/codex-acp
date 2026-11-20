@@ -72,6 +72,21 @@ function count(totalTokens: number): TokenCount {
 }
 
 describe("PromptTokenUsage", () => {
+    it("records each new request once, excluding the inherited prompt baseline", () => {
+        const usage = new PromptTokenUsage(null);
+        usage.observe(count(1000), count(100));
+        usage.observeModelOutput();
+        usage.observe(count(1020), count(20));
+        usage.observe(count(1020), count(20));
+        usage.observe(count(1025), count(5));
+        expect(usage.requestUsage()).toEqual({
+            count: 2,
+            requests: [
+                { ...count(20), recordedAt: expect.any(String) },
+                { ...count(5), recordedAt: expect.any(String) },
+            ],
+        });
+    });
     it("is null before Codex reports usage", () => {
         expect(new PromptTokenUsage(count(1000)).usage()).toBeNull();
     });

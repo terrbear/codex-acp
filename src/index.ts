@@ -185,6 +185,7 @@ function startAcpServer() {
         .onRequest(acp.methods.agent.session.prompt, (ctx) => getAgent().prompt(ctx.params, ctx.signal))
         .onNotification(acp.methods.agent.session.cancel, (ctx) => getAgent().cancel(ctx.params))
         .onRequest("authentication/status", emptyExtensionParamsParser, (ctx) => getAgent().extMethod("authentication/status", ctx.params))
+        .onRequest("_account/subscription_usage", emptyExtensionParamsParser, (ctx) => getAgent().extMethod("_account/subscription_usage", ctx.params))
         .onRequest("authentication/logout", emptyExtensionParamsParser, (ctx) => getAgent().extMethod("authentication/logout", ctx.params))
         .onRequest("_session/read_history", readHistoryParamsParser, (ctx) => getAgent().extMethod("_session/read_history", ctx.params))
         .onRequest(LEGACY_SET_SESSION_MODEL_METHOD, legacySetSessionModelParamsParser, (ctx) => getAgent().extMethod(LEGACY_SET_SESSION_MODEL_METHOD, ctx.params))

@@ -50,6 +50,7 @@ import type {
     ThreadItem,
     UserInput
 } from "./app-server/v2";
+import {codexSubscriptionWindows} from "./SubscriptionUsage";
 import type {RateLimitsMap} from "./RateLimitsMap";
 import {ModelId} from "./ModelId";
 import {normalizeSessionTitle} from "./SessionTitle";
@@ -510,6 +511,7 @@ export class CodexAcpServer {
                     // never carries a payload, and the client never asks for one.
                     [AUTH_STATUS_META_KEY]: authStatusCapability(),
                     readOnlyHistory: {version: 1},
+                    ...(_params.clientCapabilities?._meta?.["ahpd.subscriptionUsage"] === 1 ? {subscriptionUsage: {version: 1}} : {}),
                 },
             },
             authMethods: getCodexAuthMethods(_params.clientCapabilities),
@@ -560,6 +562,9 @@ export class CodexAcpServer {
     }
 
     async extMethod(method: string, params: Record<string, unknown>): Promise<Record<string, unknown>> {
+        if (method === "_account/subscription_usage" && Object.keys(params).length === 0) {
+            return await this.readSubscriptionUsage();
+        }
         if (method === "_session/read_history") {
             const id = params["sessionId"];
             if (typeof id !== "string" || !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(id) || Object.keys(params).some(key => key !== "sessionId")) {
@@ -1750,6 +1755,29 @@ export class CodexAcpServer {
             return;
         }
         await this.setAuthStatus(authStatus);
+    }
+
+    private async readSubscriptionUsage(): Promise<Record<string, unknown>> {
+        const unavailable = {status: "unavailable"};
+        const client = this.codexAcpClient;
+        try {
+            if (client.getAuthGatewayProviderName() !== null ||
+                !this.authProviderUsesOpenAiAccount(await this.runWithProcessCheck(() => client.getAgentConfiguredModelProvider(), client))) {
+                return unavailable;
+            }
+            const {account: before} = await this.runWithProcessCheck(() => client.getAccount(), client);
+            if (before?.type !== "chatgpt" || !before.email) return unavailable;
+            const usage = await this.runWithProcessCheck(() => client.getRateLimits(), client);
+            const {account: after} = await this.runWithProcessCheck(() => client.getAccount(), client);
+            if (client !== this.codexAcpClient || after?.type !== "chatgpt" ||
+                before.email !== after.email || before.planType !== after.planType) return unavailable;
+            const now = Date.now();
+            const windows = codexSubscriptionWindows(usage, now);
+            if (windows.length === 0) return unavailable;
+            return {status: "verified", name: after.email, reportedAt: new Date(now).toISOString(), windows};
+        } catch {
+            return unavailable;
+        }
     }
 
     /**
